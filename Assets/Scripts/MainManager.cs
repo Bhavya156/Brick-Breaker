@@ -1,5 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -11,21 +14,25 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public TextMeshProUGUI HighScoreTxt;
     public GameObject GameOverText;
-    
+
     private bool m_Started = false;
     private int m_Points;
-    
+    private int m_HighScore;
     private bool m_GameOver = false;
 
-    
+
     // Start is called before the first frame update
     void Start()
     {
+        MenuManager.Instance.LoadSaveData(HighScoreTxt);
+        m_HighScore = MenuManager.Instance.highScore;
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
-        
-        int[] pointCountArray = new [] {1,1,2,2,5,5};
+
+        int[] pointCountArray = new[] { 1, 1, 2, 2, 5, 5 };
         for (int i = 0; i < LineCount; ++i)
         {
             for (int x = 0; x < perLine; ++x)
@@ -45,7 +52,7 @@ public class MainManager : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 m_Started = true;
-                float randomDirection = Random.Range(-1.0f, 1.0f);
+                float randomDirection = UnityEngine.Random.Range(-1.0f, 1.0f);
                 Vector3 forceDir = new Vector3(randomDirection, 1, 0);
                 forceDir.Normalize();
 
@@ -70,7 +77,31 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        SavePlayerData();
         m_GameOver = true;
         GameOverText.SetActive(true);
     }
+
+    void SavePlayerData()
+    {
+        if (m_Points > m_HighScore)
+        {
+            m_HighScore = m_Points;
+            Player newPlayer = new Player();
+            newPlayer.PlayerName = MenuManager.Instance.playerName;
+            newPlayer.score = m_HighScore;
+            HighScoreTxt.text = $"Best Score: {newPlayer.PlayerName} : {m_HighScore}";
+
+            string json = JsonUtility.ToJson(newPlayer);
+            File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+        }
+    }
+}
+
+
+[Serializable]
+class Player
+{
+    public string PlayerName;
+    public int score;
 }
